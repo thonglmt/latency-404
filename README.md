@@ -46,7 +46,7 @@ Then, on your browser, navigate to:
 
 - `http://localhost:3000` for Grafana (username: admin, password: admin)
 - `http://localhost:9090` for accessing monitoring services
-- `http://localhost:8080` for the web server (example-service)
+- `http://localhost:8000` for the web server (example-service)
 
 To destroy the local environment, run:
 
