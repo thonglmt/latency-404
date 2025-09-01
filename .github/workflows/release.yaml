@@ -75,7 +75,7 @@ jobs:
         id: push
         with:
           context: ${{ matrix.dirs }}
-          file: ${{ matrix.dirs }}/Dockerfile
+          file: ${{ matrix.dirs }}/deploy/docker/Dockerfile
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           tags: ${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ matrix.dirs }}:${{ steps.version.outputs.version }}
           cache-from: type=gha
