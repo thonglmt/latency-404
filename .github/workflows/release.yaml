@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: Get changed dirs
-        uses: tj-actions/changed-files@03334d095e2739fa9ac4034ec16f66d5d01e9eba # v44.5.1
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
         id: get-changed-dirs
         with:
           dir_names: "true"
