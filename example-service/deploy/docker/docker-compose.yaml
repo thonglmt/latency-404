@@ -5,7 +5,7 @@ services:
     restart: always
     image: ghcr.io/thonglmt/latency-404/example-service:0.0.7
     ports:
-      - "8000:8000"
+      - "80:8000"
     environment:
       - PORT=8000
       - NOTES_FILE_PATH=/app/data/notes.txt

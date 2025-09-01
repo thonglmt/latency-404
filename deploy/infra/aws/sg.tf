@@ -6,9 +6,9 @@ module "example_security_group" {
   description = "A security group for service instances."
   vpc_id      = module.example_vpc.vpc_id
 
-  # TODO: REMOVE when not debugging
-  ingress_cidr_blocks = ["116.109.73.37/32"] # Change this to your public IP address
-  ingress_rules       = ["ssh-tcp", "all-icmp"]
+  # # TODO: REMOVE when not debugging
+  # ingress_cidr_blocks = ["116.109.73.37/32"] # Change this to your public IP address
+  # ingress_rules       = ["ssh-tcp", "all-icmp"]
 
   ingress_with_source_security_group_id = [
     {

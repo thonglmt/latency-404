@@ -42,15 +42,15 @@ module "example_ec2" {
   ami               = data.aws_ami.ubuntu.id
   instance_type     = "t3.micro"
   availability_zone = element(module.example_vpc.azs, 0)
-  # TODO: remove when not debugging
-  subnet_id = element(module.example_vpc.public_subnets, 0)
-  # subnet_id         = element(module.example_vpc.private_subnets, 0)
+  # # TODO: remove when not debugging
+  # subnet_id = element(module.example_vpc.public_subnets, 0)
+  subnet_id = element(module.example_vpc.private_subnets, 0)
   vpc_security_group_ids = [
     module.example_security_group.security_group_id,
   ]
 
-  # TODO: remove when not debugging
-  associate_public_ip_address = true
+  # # TODO: remove when not debugging
+  # associate_public_ip_address = true
 
   create_iam_instance_profile = true
   iam_role_description        = "IAM role for EC2 instance"
@@ -72,38 +72,43 @@ module "example_ec2" {
   tags = local.common_tags
 }
 
-# //
-# // Monitoring EC2 instance
-# //
-# // An EC2 instance to monitor the above EC2 instance
-# module "monitoring_example_ec2" {
-#   source = "terraform-aws-modules/ec2-instance/aws"
+//
+// Monitoring EC2 instance
+//
+// An EC2 instance to monitor the above EC2 instance
+//
+module "monitoring_example_ec2" {
+  source = "terraform-aws-modules/ec2-instance/aws"
 
-#   name = "monitoring-${local.name}"
+  name = "monitoring-${local.name}"
 
-#   ami               = data.aws_ami.ubuntu.id
-#   instance_type     = "t3.micro"
-#   availability_zone = element(module.example_vpc.azs, 0)
-#   subnet_id         = element(module.example_vpc.public_subnets, 0)
-#   vpc_security_group_ids = [
-#     module.example_monitoring_security_group.security_group_id,
-#   ]
+  ami               = data.aws_ami.ubuntu.id
+  instance_type     = "t3.micro"
+  availability_zone = element(module.example_vpc.azs, 0)
+  subnet_id         = element(module.example_vpc.public_subnets, 0)
+  vpc_security_group_ids = [
+    module.example_monitoring_security_group.security_group_id,
+  ]
 
-#   create_iam_instance_profile = true
-#   iam_role_description        = "IAM role for EC2 instance"
-#   iam_role_policies           = {}
+  create_iam_instance_profile = true
+  iam_role_description        = "IAM role for EC2 instance"
+  iam_role_policies           = {}
 
-#   hibernation = true
+  associate_public_ip_address = true
 
-#   # user_data_base64            = "base64encode(local.user_data)"
-#   # user_data_replace_on_change = false
+  hibernation = true
 
-#   root_block_device = {
-#     encrypted  = true
-#     type       = "gp3"
-#     throughput = 200
-#     size       = 30
-#   }
+  user_data                   = file("../../../monitoring-service/deploy/ec2/user-data.sh")
+  user_data_replace_on_change = false
 
-#   tags = local.common_tags
-# }
+  key_name = module.instance_key_pair.key_pair_name
+
+  root_block_device = {
+    encrypted  = true
+    type       = "gp3"
+    throughput = 200
+    size       = 30
+  }
+
+  tags = local.common_tags
+}
