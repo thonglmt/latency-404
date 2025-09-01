@@ -105,7 +105,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "http_health_check_created{status=\"success\"}/http_health_check_created{} * 100",
+          "expr": "http_health_check_created{host=\"$host\",status=\"success\"}/http_health_check_created{host=\"$host\"} * 100",
           "legendFormat": "success rate",
           "range": true,
           "refId": "A"
@@ -341,7 +341,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "dns_health_check_created{status=\"success\"}/dns_health_check_created{} * 100",
+          "expr": "dns_health_check_created{host=\"$host\",status=\"success\"}/dns_health_check_created{host=\"$host\"} * 100",
           "legendFormat": "success rate",
           "range": true,
           "refId": "A"
@@ -577,7 +577,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "tcp_health_check_created{status=\"success\"}/tcp_health_check_created{} * 100",
+          "expr": "tcp_health_check_created{status=\"success\",host=\"$host\"}/tcp_health_check_created{host=\"$host\"} * 100",
           "legendFormat": "success rate",
           "range": true,
           "refId": "A"
@@ -813,7 +813,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "ping_health_check_created{status=\"success\"}/ping_health_check_created{} * 100",
+          "expr": "ping_health_check_created{host=\"$host\",status=\"success\"}/ping_health_check_created{host=\"$host\"} * 100",
           "legendFormat": "success rate",
           "range": true,
           "refId": "A"
@@ -1003,5 +1003,6 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Example Service Latency",
-  "uid": "example-service-latency-monitoring"
+  "uid": "example-service-latency-monitoring",
+  "version": 1
 }
