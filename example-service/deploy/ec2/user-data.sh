@@ -33,7 +33,6 @@ echo "$(date): Example service deployment completed" >> /var/log/user-data.log
 
 #
 # Set up a cronjob for automatically updating the service every 180s.
-# GitOps? Kind of.
 #
 
 # Create update script
