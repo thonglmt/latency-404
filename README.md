@@ -2,6 +2,21 @@
 
 Simple web service for monitoring network latency.
 
+- [Latency 404](#latency-404)
+  - [Prerequisites](#prerequisites)
+  - [How to run?](#how-to-run)
+    - [Local](#local)
+  - [AWS](#aws)
+  - [Architecture](#architecture)
+    - [Monitoring service](#monitoring-service)
+    - [Web-server (example-service)](#web-server-example-service)
+  - [Technologies](#technologies)
+    - [CICD](#cicd)
+    - [Artifacts](#artifacts)
+    - [Hosting](#hosting)
+    - [Building the services and Collecting the metrics](#building-the-services-and-collecting-the-metrics)
+  - [How to view metrics?](#how-to-view-metrics)
+
 ## Prerequisites
 
 - Docker
@@ -142,8 +157,47 @@ The local DNS name is always `example.example-corp.internal`.
 
 It exposes `/notes?content=<note>` endpoint for writting a newline to a localfile. And a `/health` endpoint for checking the health status.
 
-## How CICD works?
+## Technologies
+
+### CICD
+
+As the project source code is in Github, Github Actions is my number 1 choice, simple, fast and not set up required.
 
 For CI, there is a Github Actions CI pipeline called `Build & publish images` that automatically builds and publishes Docker images for the monitoring service and web server every time there is a commit to the main branch.
 
 For CD, at the beginning, I thought about using a self-hosted runner to run CD securely but the AWS free-tier budget doesn't allow me to do so. So I wrote a simple cronjob that mimics the behavior of `GitOps` by periodically (3 minutes) pull the latest commits and run `docker compose up` again (You can check the logic at [monitoring-service user-data.sh](./monitoring-service/deploy/ec2/user-data.sh) or [example-service user-data.sh](./example-service/deploy/ec2/user-data.sh)).
+
+### Artifacts
+
+OCI image is a global standard for packaging and distributing applications now.
+
+I choose `docker` for building and running the services.
+
+And Github container registry for storing the images.
+
+### Hosting
+
+EC2 and ECS are both viable options for hosting the services.
+
+I choose EC2 with linux based AMI (Ubuntu) for its flexibility, control over the environment.
+
+I also use Docker for easy manage the processes, automation and dependencies of the services.
+
+### Building the services and Collecting the metrics
+
+I choose Python with Flask as it simplifies the process of creating RESTful APIs and handling HTTP requests.
+
+For collecting the metrics, Python libraries like `requests`, `socket` or `ping cli` are used.
+
+For storing and visualizing the metrics, Prometheus + Grafana are used. Prometheus is responsible for scraping and storing the metrics, while Grafana is used to create dashboards and visualize the data.
+
+## How to view metrics?
+
+After deploying Grafana and Prometheus, you can access the Grafana dashboard by navigating to `http://localhost:3000` in your web browser. The default login credentials are:
+
+- Username: `admin`
+- Password: `admin`
+
+The datasource and dashboard are already configured, so you can start monitoring the metrics right away by looking at the dashboard named `Example Service Latency`.
+
+![Architecture Diagram](./docs/images/grafana-dashboard.png)
