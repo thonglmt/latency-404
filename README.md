@@ -9,7 +9,7 @@ Simple web service for monitoring network latency.
   - [AWS](#aws)
   - [Architecture](#architecture)
     - [Monitoring service](#monitoring-service)
-    - [Web-server (example-service)](#web-server-example-service)
+    - [Example-service](#example-service)
   - [Technologies](#technologies)
     - [CICD](#cicd)
     - [Artifacts](#artifacts)
@@ -111,13 +111,13 @@ All of the components are hosted within `ap-southeast-1` (Singapore) region.
 
 For the baseline components, just like many other AWS architectures, we have the following:
 
-1. **VPC**: A VPC named `example` that consists of 1 public subnet and 1 private subnet. Of course there will be Internet Gateway, NAT Gateway, and Route Tables configured to allow traffic flow.
+1. **VPC**: A VPC named `example` that consists of 1 public subnet and 1 private subnet. Of course there will be Internet gw, NAT gw and Route Tables configured to allow traffic flow.
 2. **Route 53**: A Route 53 PRIVATE Hosted Zone for internal DNS resolution. The domain name is `example-corp.internal`.
 
 The main part of the architecture is 2 EC2 instances running within the created VPC.
 
-1. **monitoring-service EC2 instance**: A service that periodically checks the latency of the web server and reports the status to a monitoring dashboard. This EC2 instance is deployed in the public subnet.
-2. **web-server EC2 instance**: A web server that takes your notes and writes them to a file! It also exposes a health check endpoint for monitoring. This EC2 instance is deployed in the private subnet.
+1. **monitoring-service EC2 instance**: A service that periodically checks the latency of the web server. This EC2 instance is deployed in the public subnet.
+2. **example-service EC2 instance**: A simple web server exposes a health check endpoint for monitoring. This EC2 instance is deployed in the private subnet.
 
 ### Monitoring service
 
@@ -128,7 +128,7 @@ There are 4 type of latency checks performed by the monitoring service:
 1. **HTTP Latency**: Measures the time taken to receive a response from the web server for a specific HTTP request.
 2. **TCP Latency**: Measures the time taken to establish a TCP connection to the web server.
 3. **DNS Latency**: Measures the time taken to resolve the domain name of the web server.
-4. **ICMP Ping Latency**: Measures the time taken for an ICMP ping request to reach the web server and receive a response.
+4. **ICMP Latency**: Measures the time taken for an ICMP ping request to reach the web server and receive a response.
 
 By default, all latency checks are performed every 15 seconds. It can be changed by modifying the `CHECK_INTERVAL` environment variable in [docker-compose.yaml](./monitoring-service/deploy/docker/docker-compose.yaml).
 
@@ -149,7 +149,7 @@ Here are the list of collected metrics:
 | `ping_response_time_seconds` | Histogram | `target` | ICMP ping response time in seconds |
 | `dns_response_time_seconds` | Histogram | `target` | DNS resolution time in seconds |
 
-### Web-server (example-service)
+### Example-service
 
 A simple web server that accepts TCP/HTTP/ICMP requests. Serves as a target for the monitoring service.
 
