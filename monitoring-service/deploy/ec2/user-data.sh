@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Update system
 apt-get update -y
 
@@ -26,24 +28,25 @@ cd /opt/latency-404
 # Clone the repository
 git clone https://github.com/thonglmt/latency-404.git .
 
-# Navigate to docker compose directory
-cd deploy/docker
+# Run the monitoring service
+docker-compose -f monitoring-service/deploy/docker/docker-compose.yaml up -d
 
-# Run the example service
-docker-compose -f docker-compose.example-service.yaml up -d
+echo "$(date): Monitoring service deployment completed" >> /var/log/user-data.log
+
+#
+# Set up a cronjob for automatically updating the service every 180s.
+# GitOps? Kind of.
+#
 
 # Create update script
 cat > /opt/latency-404/update-service.sh << 'EOF'
 #!/bin/bash
 cd /opt/latency-404
 git pull origin main
-cd deploy/docker
-docker-compose -f example-service/deploy/docker/docker-compose.yaml pull
-docker-compose -f example-service/deploy/docker/docker-compose.yaml up -d
+docker-compose -f monitoring-service/deploy/docker/docker-compose.yaml pull
+docker-compose -f monitoring-service/deploy/docker/docker-compose.yaml up -d
 echo "$(date): Service updated" >> /var/log/service-updates.log
 EOF
-
-echo "$(date): Example service deployment completed" >> /var/log/user-data.log
 
 chmod +x /opt/latency-404/update-service.sh
 
