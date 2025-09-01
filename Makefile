@@ -1,5 +1,5 @@
 local:
-	docker-compose -f deploy/docker/docker-compose.local.yaml up -d --pull always
+	docker-compose -f deploy/docker/docker-compose.local.yaml up -d --build
 
 stop-local:
 	docker-compose -f deploy/docker/docker-compose.local.yaml down

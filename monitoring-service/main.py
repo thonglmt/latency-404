@@ -1,10 +1,12 @@
-from flask import Flask, Response
 import requests
 import socket
 import subprocess
 import time
 import threading
 import os
+import logging
+
+from flask import Flask, Response
 from prometheus_client import (
     Counter,
     Histogram,
@@ -57,6 +59,10 @@ class HealthChecker:
             response = requests.get(self.target_url, timeout=5)
             response_time = time.time() - start_time
 
+            logging.debug(
+                "HTTP status: %d, response: %s", response.status_code, response.text
+            )  # Debug line
+
             http_response_time.labels(target=self.target_host).observe(response_time)
 
             if response.status_code == 200:
@@ -68,6 +74,7 @@ class HealthChecker:
                 service_up.labels(target=self.target_host, check_type="http").set(0)
                 return False
         except Exception as e:
+            logging.debug("HTTP check error: %s", e)
             http_check_total.labels(target=self.target_host, status="error").inc()
             service_up.labels(target=self.target_host, check_type="http").set(0)
             return False
@@ -82,9 +89,10 @@ class HealthChecker:
             response_time = time.time() - start_time
             sock.close()
 
-            tcp_response_time.labels(target=self.target_host).observe(response_time)
+            logging.debug("TCP status: %d", result)  # Debug line
 
             if result == 0:
+                tcp_response_time.labels(target=self.target_host).observe(response_time)
                 tcp_check_total.labels(target=self.target_host, status="success").inc()
                 service_up.labels(target=self.target_host, check_type="tcp").set(1)
                 return True
@@ -93,6 +101,7 @@ class HealthChecker:
                 service_up.labels(target=self.target_host, check_type="tcp").set(0)
                 return False
         except Exception as e:
+            logging.debug("TCP check error: %s", e)
             tcp_check_total.labels(target=self.target_host, status="error").inc()
             service_up.labels(target=self.target_host, check_type="tcp").set(0)
             return False
@@ -108,9 +117,14 @@ class HealthChecker:
             )
             response_time = time.time() - start_time
 
-            ping_response_time.labels(target=self.target_host).observe(response_time)
+            logging.debug(
+                "Ping output: %d, %s", result.returncode, result.stdout
+            )  # Debug line
 
             if result.returncode == 0:
+                ping_response_time.labels(target=self.target_host).observe(
+                    response_time
+                )
                 ping_check_total.labels(target=self.target_host, status="success").inc()
                 service_up.labels(target=self.target_host, check_type="ping").set(1)
                 return True
@@ -119,6 +133,7 @@ class HealthChecker:
                 service_up.labels(target=self.target_host, check_type="ping").set(0)
                 return False
         except Exception as e:
+            logging.debug("Ping check error: %s", e)
             ping_check_total.labels(target=self.target_host, status="error").inc()
             service_up.labels(target=self.target_host, check_type="ping").set(0)
             return False
@@ -130,11 +145,14 @@ class HealthChecker:
             socket.gethostbyname(self.target_host)
             response_time = time.time() - start_time
 
+            logging.debug("DNS resolution successful")
+
             dns_response_time.labels(target=self.target_host).observe(response_time)
             dns_check_total.labels(target=self.target_host, status="success").inc()
             service_up.labels(target=self.target_host, check_type="dns").set(1)
             return True
         except Exception as e:
+            logging.debug("DNS check error: %s", e)
             dns_check_total.labels(target=self.target_host, status="error").inc()
             service_up.labels(target=self.target_host, check_type="dns").set(0)
             return False
@@ -161,9 +179,9 @@ def background_monitoring():
     while True:
         try:
             checker.run_all_checks()
-            print(f"Health checks completed for {target_host}")
+            logging.info(f"Health checks completed for {target_host}")
         except Exception as e:
-            print(f"Error during health checks: {e}")
+            logging.info(f"Error during health checks: {e}")
 
         time.sleep(check_interval)
 
@@ -198,13 +216,20 @@ def manual_check():
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger()
+    logging.basicConfig(
+        format="%(asctime)s : %(levelname)s : %(name)s : %(message)s",
+        level=logging.DEBUG,
+    )
+    logger.setLevel(logging.DEBUG)
+
     # Start background monitoring thread
     monitoring_thread = threading.Thread(target=background_monitoring, daemon=True)
     monitoring_thread.start()
 
     PORT = int(os.getenv("PORT", "9090"))
-    print(f"Monitoring service running on http://localhost:{PORT}")
-    print(f"Metrics available at http://localhost:{PORT}/metrics")
-    print(f"Manual check at http://localhost:{PORT}/check")
+    logging.info(f"Monitoring service running on http://localhost:{PORT}")
+    logging.info(f"Metrics available at http://localhost:{PORT}/metrics")
+    logging.info(f"Manual check at http://localhost:{PORT}/check")
 
     app.run(host="0.0.0.0", port=PORT, debug=False)

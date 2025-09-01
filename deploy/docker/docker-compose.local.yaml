@@ -4,7 +4,7 @@ services:
     restart: always
     build:
       context: ../../example-service
-      dockerfile: Dockerfile
+      dockerfile: deploy/docker/Dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -27,7 +27,7 @@ services:
     restart: always
     build:
       context: ../../monitoring-service
-      dockerfile: Dockerfile
+      dockerfile: deploy/docker/Dockerfile
     ports:
       - "9090:9090"
     environment:

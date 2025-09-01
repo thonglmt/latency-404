@@ -10,7 +10,7 @@ services:
     environment:
       - PORT=9090
       - TARGET_HOST=example.example-corp.internal
-      - TARGET_PORT=8000
+      - TARGET_PORT=80
       - TARGET_PATH=/health
       - CHECK_INTERVAL=15
     networks:
