@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  example-service:
+    container_name: example-service
+    build:
+      context: ../../example-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - NOTES_FILE_PATH=/app/data/notes.txt
+    volumes:
+      - notes_data:/app/data
+    networks:
+      - example
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  monitoring-service:
+    container_name: monitoring-service
+    build:
+      context: ../../monitoring-service
+      dockerfile: Dockerfile
+    ports:
+      - "9090:9090"
+    environment:
+      - PORT=9090
+      - TARGET_HOST=example-service
+      - TARGET_PORT=8000
+      - TARGET_PATH=/health
+      - CHECK_INTERVAL=15
+    depends_on:
+      - example-service
+    networks:
+      - example
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  notes_data:
+    driver: local
+
+networks:
+  example:
+    driver: bridge
