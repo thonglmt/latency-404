@@ -45,3 +45,5 @@ terraform.rc
 REQUIREMENTS.md
 notes.txt
 .venv
+
+.DS_Store
