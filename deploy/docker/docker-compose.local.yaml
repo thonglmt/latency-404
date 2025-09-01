@@ -1,8 +1,7 @@
-version: "3.8"
-
 services:
   example-service:
     container_name: example-service
+    restart: always
     build:
       context: ../../example-service
       dockerfile: Dockerfile
@@ -24,6 +23,8 @@ services:
 
   monitoring-service:
     container_name: monitoring-service
+    init: true
+    restart: always
     build:
       context: ../../monitoring-service
       dockerfile: Dockerfile

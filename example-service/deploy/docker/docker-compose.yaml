@@ -1,0 +1,29 @@
+services:
+  example-service:
+    container_name: example-service
+    platform: linux/amd64
+    restart: always
+    image: ghcr.io/thonglmt/latency-404/example-service:0.0.2
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - NOTES_FILE_PATH=/app/data/notes.txt
+    volumes:
+      - notes_data:/app/data
+    networks:
+      - example
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  notes_data:
+    driver: local
+
+networks:
+  example:
+    driver: bridge
