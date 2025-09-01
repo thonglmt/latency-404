@@ -3,7 +3,7 @@ services:
     container_name: example-service
     platform: linux/amd64
     restart: always
-    image: ghcr.io/thonglmt/latency-404/example-service:0.0.3
+    image: ghcr.io/thonglmt/latency-404/example-service:0.0.6
     ports:
       - "8000:8000"
     environment:
