@@ -248,6 +248,7 @@ The goal is to capture enough detail to support analysis, the best practices on 
 - Understand the service: if your service require low latency (~10ms), typical latency (100-1000ms) or slow (>1s) and define SLOs. Base on that min-max latency range, implement an exponential buckets(Logarithmic Bucket Scaling) or clustered buckets around the SLO to better spot the outliers that affect SLAs.
 - Avoid having too many buckets, as it can lead to high cardinality and performance issues in Prometheus.
 - Regularly review and adjust the bucket configuration.
+- Or use [Prometheus native histogram [EXPERIMENTAL]](https://prometheus.io/docs/specs/native_histograms/) to not worry about bucket configuration.
 
 ### On latency improvements in AWS
 
@@ -283,7 +284,7 @@ Higher the number of vCPUs, higher bandwidth.
 
 See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-network-bandwidth.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-network-bandwidth.html)
 
-Or use enhanced networking (Up to 100Gbps): [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking.html) => Bypasses virtualization, ENI used by VM appears as a physical device.
+Or use enhanced networking (Up to 100Gbps): [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking.html) => Bypasses virtualization when transmitting packets, ENI used by VM appears as a physical device.
 
 #### Optimize Processing Time
 
@@ -293,7 +294,7 @@ OS level optimization
 
 - EFA - Elastic Fabric Adapter: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html)
 
-=> Bypasses OS kernel and reduces packet processing overhead.
+=> Bypasses OS kernel networking stack and reduces packet processing overhead.
 
 On Linux, configure busy poll mode, CPU power states (C-states), Interrupt moderation... See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ena-improve-network-latency-linux.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ena-improve-network-latency-linux.html)
 
