@@ -17,10 +17,16 @@ Simple web service for monitoring network latency.
     - [Building the services and Collecting the metrics](#building-the-services-and-collecting-the-metrics)
   - [How to view metrics?](#how-to-view-metrics)
   - [Insights](#insights)
-  - [On latency](#on-latency)
-    - [ICMP](#icmp)
-    - [Histogram metrics](#histogram-metrics)
-  - [On latency improvements](#on-latency-improvements)
+    - [On architecture](#on-architecture)
+    - [On latency](#on-latency)
+      - [ICMP](#icmp)
+      - [Histogram metrics](#histogram-metrics)
+    - [On latency improvements in AWS](#on-latency-improvements-in-aws)
+      - [Optimize MTU](#optimize-mtu)
+      - [EC2 Placement Group](#ec2-placement-group)
+      - [Network bandwidth](#network-bandwidth)
+      - [Optimize Processing Time](#optimize-processing-time)
+  - [References](#references)
 
 ## Prerequisites
 
@@ -213,17 +219,25 @@ All of the latency dashboard panels are focused on tail latencies, P90, P95 and 
 
 ## Insights
 
-## On latency
+### On architecture
+
+On production setup, I'll need to adjust the monitoring service:
+
+- High Availability: Deploy multiple instances of the monitoring service to ensure high availability and fault tolerance.
+- Support multi target monitoring.
+- Spend time to enhance the CICD process with proper testing, validation and use self-hosted runner/ArgoCD if needed.
+
+### On latency
 
 The HTTP, TCP and DNS is quite straightforward.
 
-### ICMP
+#### ICMP
 
 However, the way I do ICMP check is base on the `ping` command, which envolve using `subprocess` to execute the command and capture the output. There is a lot of factor that affect the accuracy like: the initialization of a separate process (to run `ping`), process termination, IPC...
 
 That I think the reason why, sometimes, the ICMP latency is even higher that the others. So looking for a library that can handle ICMP would be better.
 
-### Histogram metrics
+#### Histogram metrics
 
 All of the latencies metrics are Prometheus Histogram with default buckets of [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, +Inf] seconds.
 
@@ -235,4 +249,54 @@ The goal is to capture enough detail to support analysis, the best practices on 
 - Avoid having too many buckets, as it can lead to high cardinality and performance issues in Prometheus.
 - Regularly review and adjust the bucket configuration.
 
-## On latency improvements
+### On latency improvements in AWS
+
+Disclaimer: I haven't tried all of these optimizations, just listing them as potential options.
+
+#### Optimize MTU
+
+Based on service requirements, choose between regular packet size (1500) or jumbo packet (9001):
+
+- Smaller size:
+  - Higher CPU utilization due to more packets being processed
+  - Less payload since header size add up
+  - Retransmissions is fast as packets are smaller
+- Jumbo packet:
+  - Maximizes throughput
+  - Lower CPU utilization due to fewer packets being processed
+  - More payload since less packet headers are added but might face fragmentation (Not all hardware supports jumbo frames)
+  - Retransmissions is slower as packets are larger
+
+See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/network_mtu.html#jumbo_frame_instances](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/network_mtu.html#jumbo_frame_instances)
+
+#### EC2 Placement Group
+
+Deploy EC2 instances in the same AZ, racks => Lowest latency, highest bandwidth.
+
+See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html)
+
+#### Network bandwidth
+
+VPC has no limit if used within region, but capped by NAT gw (5-100 Gbps, or optimize by using NAT per subnet), Internet GW (50% of available bandwidth) or instance type.
+
+Higher the number of vCPUs, higher bandwidth.
+
+See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-network-bandwidth.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-network-bandwidth.html)
+
+Or use enhanced networking (Up to 100Gbps): [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking.html) => Bypasses virtualization, ENI used by VM appears as a physical device.
+
+#### Optimize Processing Time
+
+OS level optimization
+
+- Intel Data Plane Development Kit (DPDK): [https://docs.aws.amazon.com/whitepapers/latest/ec2-networking-for-telecom/overview-of-performance-optimization-options.html](https://aws.amazon.com/blogs/industries/automate-packet-acceleration-configuration-using-dpdk-on-amazon-eks/)
+
+- EFA - Elastic Fabric Adapter: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html)
+
+=> Bypasses OS kernel and reduces packet processing overhead.
+
+On Linux, configure busy poll mode, CPU power states (C-states), Interrupt moderation... See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ena-improve-network-latency-linux.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ena-improve-network-latency-linux.html)
+
+## References
+
+- [https://last9.io/blog/histogram-buckets-in-prometheus/#configure-histogram-buckets](https://last9.io/blog/histogram-buckets-in-prometheus/#configure-histogram-buckets)
