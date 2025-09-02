@@ -3,32 +3,32 @@
 Simple web service for monitoring network latency.
 
 - [Latency 404](#latency-404)
-  - [Prerequisites](#prerequisites)
-  - [How to run?](#how-to-run)
-    - [Local](#local)
-    - [AWS](#aws)
-  - [Architecture](#architecture)
-    - [Monitoring service](#monitoring-service)
-    - [Example-service](#example-service)
-  - [Technologies](#technologies)
-    - [CICD](#cicd)
-    - [Artifacts](#artifacts)
-    - [Hosting](#hosting)
-    - [Building the services and Collecting the metrics](#building-the-services-and-collecting-the-metrics)
-  - [How to view metrics?](#how-to-view-metrics)
-  - [Insights](#insights)
-    - [On architecture](#on-architecture)
-    - [On latency](#on-latency)
-      - [ICMP](#icmp)
-      - [Histogram metrics](#histogram-metrics)
-    - [On latency improvements in AWS](#on-latency-improvements-in-aws)
-      - [Optimize MTU](#optimize-mtu)
-      - [EC2 Placement Group](#ec2-placement-group)
-      - [Network bandwidth](#network-bandwidth)
-      - [Optimize Processing Time](#optimize-processing-time)
-  - [References](#references)
+  - [1. Prerequisites](#1-prerequisites)
+  - [2. How to run?](#2-how-to-run)
+    - [2.1. Local](#21-local)
+    - [2.2. AWS](#22-aws)
+  - [3. Architecture](#3-architecture)
+    - [3.1. Monitoring service](#31-monitoring-service)
+    - [3.2. Example-service](#32-example-service)
+  - [4. Technologies](#4-technologies)
+    - [4.1. CICD](#41-cicd)
+    - [4.2. Artifacts](#42-artifacts)
+    - [4.3. Hosting](#43-hosting)
+    - [4.4. Building the services and Collecting the metrics](#44-building-the-services-and-collecting-the-metrics)
+  - [5. How to view metrics?](#5-how-to-view-metrics)
+  - [6. Some Insights](#6-some-insights)
+    - [6.1. On architecture](#61-on-architecture)
+    - [6.2. On latency](#62-on-latency)
+      - [6.2.1. ICMP](#621-icmp)
+      - [6.2.2. Histogram metrics](#622-histogram-metrics)
+    - [6.3. On latency improvements in AWS](#63-on-latency-improvements-in-aws)
+      - [6.3.1. Optimize MTU](#631-optimize-mtu)
+      - [6.3.2. EC2 Placement Group](#632-ec2-placement-group)
+      - [6.3.3. Network bandwidth](#633-network-bandwidth)
+      - [6.3.4. Optimize Processing Time](#634-optimize-processing-time)
+  - [7. References](#7-references)
 
-## Prerequisites
+## 1. Prerequisites
 
 - Docker
 - Docker Compose
@@ -37,9 +37,9 @@ Simple web service for monitoring network latency.
 - Make
 - Python
 
-## How to run?
+## 2. How to run?
 
-### Local
+### 2.1. Local
 
 Run locally on your machine, suitable for local development and testing.
 
@@ -66,7 +66,7 @@ make clean-local
 make clean-monitoring
 ```
 
-### AWS
+### 2.2. AWS
 
 Make sure you have configure the AWS credentials properly.
 
@@ -114,7 +114,7 @@ To destroy the local environment, run:
 make clean-monitoring
 ```
 
-## Architecture
+## 3. Architecture
 
 ![Architecture Diagram](./docs/diagram/aws-architecture.drawio.png)
 
@@ -130,7 +130,7 @@ The main part of the architecture is 2 EC2 instances running within the created 
 1. **monitoring-service EC2 instance**: A service that periodically checks the latency of the web server. This EC2 instance is deployed in the public subnet.
 2. **example-service EC2 instance**: A simple web server exposes a health check endpoint for monitoring. This EC2 instance is deployed in the private subnet.
 
-### Monitoring service
+### 3.1. Monitoring service
 
 The monitoring service is responsible for checking the latency of the web server.
 
@@ -160,7 +160,7 @@ Here are the list of collected metrics:
 | `ping_response_time_seconds` | Histogram | `target` | ICMP ping response time in seconds |
 | `dns_response_time_seconds` | Histogram | `target` | DNS resolution time in seconds |
 
-### Example-service
+### 3.2. Example-service
 
 A simple web server that accepts TCP/HTTP/ICMP requests. Serves as a target for the monitoring service.
 
@@ -168,9 +168,9 @@ The local DNS name is always `example.example-corp.internal`.
 
 It exposes `/notes?content=<note>` endpoint for writting a newline to a localfile. And a `/health` endpoint for checking the health status.
 
-## Technologies
+## 4. Technologies
 
-### CICD
+### 4.1. CICD
 
 As the project source code is in Github, Github Actions is my number 1 choice, simple, fast and not set up required.
 
@@ -178,7 +178,7 @@ For CI, there is a Github Actions CI pipeline called `Build & publish images` th
 
 For CD, at the beginning, I thought about using a self-hosted runner to run CD securely but the AWS free-tier budget doesn't allow me to do so. So I wrote a simple cronjob that mimics the behavior of `GitOps` by periodically (3 minutes) pull the latest commits and run `docker compose up` again (You can check the logic at [monitoring-service user-data.sh](./monitoring-service/deploy/ec2/user-data.sh) or [example-service user-data.sh](./example-service/deploy/ec2/user-data.sh)).
 
-### Artifacts
+### 4.2. Artifacts
 
 OCI image is a global standard for packaging and distributing applications now.
 
@@ -186,7 +186,7 @@ I choose `docker` for building and running the services.
 
 And Github container registry for storing the images.
 
-### Hosting
+### 4.3. Hosting
 
 EC2 and ECS are both viable options for hosting the services.
 
@@ -194,7 +194,7 @@ I choose EC2 with linux based AMI (Ubuntu) for its flexibility, control over the
 
 I also use Docker for easy manage the processes, automation and dependencies of the services.
 
-### Building the services and Collecting the metrics
+### 4.4. Building the services and Collecting the metrics
 
 I choose Python with Flask as it simplifies the process of creating RESTful APIs and handling HTTP requests.
 
@@ -202,7 +202,7 @@ For collecting the metrics, Python libraries like `requests`, `socket` or `ping 
 
 For storing and visualizing the metrics, Prometheus + Grafana are used. Prometheus is responsible for scraping and storing the metrics, while Grafana is used to create dashboards and visualize the data.
 
-## How to view metrics?
+## 5. How to view metrics?
 
 After deploying Grafana and Prometheus, you can access the Grafana dashboard by navigating to `http://localhost:3000` in your web browser. The default login credentials are:
 
@@ -217,9 +217,9 @@ I like to break down these latencies into networking layers. At layer 7 we have 
 
 All of the latency dashboard panels are focused on tail latencies, P90, P95 and P99, and avoiding average numbers as they are `biased` towards high latencies. And these number, P90/95/99 can tell us if something goes wrong in the network connection between 2 hosts, even though it just affect 1-10% of the users, but the higher number of requests, the more likely they will face the high latency issue.
 
-## Insights
+## 6. Some Insights
 
-### On architecture
+### 6.1. On architecture
 
 On production setup, I'll need to adjust the monitoring service:
 
@@ -227,17 +227,17 @@ On production setup, I'll need to adjust the monitoring service:
 - Support multi target monitoring.
 - Spend time to enhance the CICD process with proper testing, validation and use self-hosted runner/ArgoCD if needed.
 
-### On latency
+### 6.2. On latency
 
 The HTTP, TCP and DNS is quite straightforward.
 
-#### ICMP
+#### 6.2.1. ICMP
 
 However, the way I do ICMP check is base on the `ping` command, which envolve using `subprocess` to execute the command and capture the output. There is a lot of factor that affect the accuracy like: the initialization of a separate process (to run `ping`), process termination, IPC...
 
 That I think the reason why, sometimes, the ICMP latency is even higher that the others. So looking for a library that can handle ICMP would be better.
 
-#### Histogram metrics
+#### 6.2.2. Histogram metrics
 
 All of the latencies metrics are Prometheus Histogram with default buckets of [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, +Inf] seconds.
 
@@ -250,11 +250,11 @@ The goal is to capture enough detail to support analysis, the best practices on 
 - Regularly review and adjust the bucket configuration.
 - Or use [Prometheus native histogram [EXPERIMENTAL]](https://prometheus.io/docs/specs/native_histograms/) to not worry about bucket configuration.
 
-### On latency improvements in AWS
+### 6.3. On latency improvements in AWS
 
 Disclaimer: I haven't tried all of these optimizations, just listing them as potential options.
 
-#### Optimize MTU
+#### 6.3.1. Optimize MTU
 
 Based on service requirements, choose between regular packet size (1500) or jumbo packet (9001):
 
@@ -270,13 +270,13 @@ Based on service requirements, choose between regular packet size (1500) or jumb
 
 See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/network_mtu.html#jumbo_frame_instances](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/network_mtu.html#jumbo_frame_instances)
 
-#### EC2 Placement Group
+#### 6.3.2. EC2 Placement Group
 
 Deploy EC2 instances in the same AZ, racks => Lowest latency, highest bandwidth.
 
 See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html)
 
-#### Network bandwidth
+#### 6.3.3. Network bandwidth
 
 VPC has no limit if used within region, but capped by NAT gw (5-100 Gbps, or optimize by using NAT per subnet), Internet GW (50% of available bandwidth) or instance type.
 
@@ -286,7 +286,7 @@ See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-network-b
 
 Or use enhanced networking (Up to 100Gbps): [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking.html) => Bypasses virtualization when transmitting packets, ENI used by VM appears as a physical device.
 
-#### Optimize Processing Time
+#### 6.3.4. Optimize Processing Time
 
 OS level optimization
 
@@ -298,6 +298,6 @@ OS level optimization
 
 On Linux, configure busy poll mode, CPU power states (C-states), Interrupt moderation... See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ena-improve-network-latency-linux.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ena-improve-network-latency-linux.html)
 
-## References
+## 7. References
 
 - [https://last9.io/blog/histogram-buckets-in-prometheus/#configure-histogram-buckets](https://last9.io/blog/histogram-buckets-in-prometheus/#configure-histogram-buckets)
