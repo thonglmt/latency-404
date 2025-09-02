@@ -279,7 +279,8 @@ The goal is to capture enough detail to support analysis, the best practices on 
 
 ### 6.3. On network latency improvements in AWS
 
-Disclaimer: I haven't tried all of these optimizations, just listing them as potential options.
+> **_NOTE:_** Disclaimer: I haven't tried all of these optimizations, just listing them as potential options.
+
 
 #### 6.3.1. Optimize MTU
 
