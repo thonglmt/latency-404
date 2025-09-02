@@ -6,7 +6,7 @@ Simple web service for monitoring network latency.
   - [Prerequisites](#prerequisites)
   - [How to run?](#how-to-run)
     - [Local](#local)
-  - [AWS](#aws)
+    - [AWS](#aws)
   - [Architecture](#architecture)
     - [Monitoring service](#monitoring-service)
     - [Example-service](#example-service)
@@ -16,6 +16,11 @@ Simple web service for monitoring network latency.
     - [Hosting](#hosting)
     - [Building the services and Collecting the metrics](#building-the-services-and-collecting-the-metrics)
   - [How to view metrics?](#how-to-view-metrics)
+  - [Insights](#insights)
+  - [On latency](#on-latency)
+    - [ICMP](#icmp)
+    - [Histogram metrics](#histogram-metrics)
+  - [On latency improvements](#on-latency-improvements)
 
 ## Prerequisites
 
@@ -55,7 +60,7 @@ make clean-local
 make clean-monitoring
 ```
 
-## AWS
+### AWS
 
 Make sure you have configure the AWS credentials properly.
 
@@ -201,3 +206,33 @@ After deploying Grafana and Prometheus, you can access the Grafana dashboard by 
 The datasource and dashboard are already configured, so you can start monitoring the metrics right away by looking at the dashboard named `Example Service Latency`.
 
 ![Architecture Diagram](./docs/images/grafana-dashboard.png)
+
+I like to break down these latencies into networking layers. At layer 7 we have HTTP and DNS, at layer 4 we have TCP, and at layer 3 we have ICMP.
+
+All of the latency dashboard panels are focused on tail latencies, P90, P95 and P99, and avoiding average numbers as they are `biased` towards high latencies. And these number, P90/95/99 can tell us if something goes wrong in the network connection between 2 hosts, even though it just affect 1-10% of the users, but the higher number of requests, the more likely they will face the high latency issue.
+
+## Insights
+
+## On latency
+
+The HTTP, TCP and DNS is quite straightforward.
+
+### ICMP
+
+However, the way I do ICMP check is base on the `ping` command, which envolve using `subprocess` to execute the command and capture the output. There is a lot of factor that affect the accuracy like: the initialization of a separate process (to run `ping`), process termination, IPC...
+
+That I think the reason why, sometimes, the ICMP latency is even higher that the others. So looking for a library that can handle ICMP would be better.
+
+### Histogram metrics
+
+All of the latencies metrics are Prometheus Histogram with default buckets of [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, +Inf] seconds.
+
+Percentiles are estimated by Prometheus base on above buckets to give us the results, but it not always accurate to all kind of network services. For example, our SLO say we should keep 95% of HTTP request less than 500ms, having a bucket of [1, 5, 10] will be overestimated, or a bucket of [0.075, 0.1, 0.25] will result almost all of the requests fall into +Inf bucket, no way to calculated P95.
+
+The goal is to capture enough detail to support analysis, the best practices on choosing buckets:
+
+- Understand the service: if your service require low latency (~10ms), typical latency (100-1000ms) or slow (>1s) and define SLOs. Base on that min-max latency range, implement an exponential buckets(Logarithmic Bucket Scaling) or clustered buckets around the SLO to better spot the outliers that affect SLAs.
+- Avoid having too many buckets, as it can lead to high cardinality and performance issues in Prometheus.
+- Regularly review and adjust the bucket configuration.
+
+## On latency improvements
