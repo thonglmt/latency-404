@@ -21,11 +21,11 @@ Simple web service for monitoring network latency.
     - [6.2. On latency](#62-on-latency)
       - [6.2.1. ICMP](#621-icmp)
       - [6.2.2. Histogram metrics](#622-histogram-metrics)
-    - [6.3. On latency improvements in AWS](#63-on-latency-improvements-in-aws)
+    - [6.3. On network latency improvements in AWS](#63-on-network-latency-improvements-in-aws)
       - [6.3.1. Optimize MTU](#631-optimize-mtu)
       - [6.3.2. EC2 Placement Group](#632-ec2-placement-group)
       - [6.3.3. Network bandwidth](#633-network-bandwidth)
-      - [6.3.4. Optimize Processing Time](#634-optimize-processing-time)
+      - [6.3.4. Optimize Network Processing Time](#634-optimize-network-processing-time)
   - [7. References](#7-references)
 
 ## 1. Prerequisites
@@ -69,6 +69,29 @@ make clean-monitoring
 ### 2.2. AWS
 
 Make sure you have configure the AWS credentials properly.
+
+First, you'll need to edit `your_public_ip` in [main.tf](./deploy/infra/aws/main.tf), this allow you to read the metrics from your local machine:
+
+```hcl
+locals {
+  name   = "example"
+  region = "ap-southeast-1"
+
+  your_public_ip = "116.109.24.61" # Change this to your public IP address
+  vpc_cidr       = "192.168.123.0/24"
+  azs            = slice(data.aws_availability_zones.available.names, 0, 1)
+
+  private_hosted_zone = "example-corp.internal"
+
+  common_tags = {
+    Team        = "example-team"
+    Owner       = "example-owner"
+    Purpose     = "example-purpose"
+    Terraform   = "true"
+    Environment = "sandbox"
+  }
+}
+```
 
 Initialize the AWS environment using Terraform.
 
@@ -224,8 +247,10 @@ All of the latency dashboard panels are focused on tail latencies, P90, P95 and 
 On production setup, I'll need to adjust the monitoring service:
 
 - High Availability: Deploy multiple instances of the monitoring service to ensure high availability and fault tolerance.
-- Support multi target monitoring.
+- Support multi target monitoring, auto-discover monitoring targets (by using AWS SDK, Kubernetes API...)
+- Maybe use Kubernetes for better manage the deployment and scaling of the services across our Cloud Hosts/DC.
 - Spend time to enhance the CICD process with proper testing, validation and use self-hosted runner/ArgoCD if needed.
+- Cost optimization: spot-instances, reserved instances, right-sizing, use VPC endpoints...
 
 ### 6.2. On latency
 
@@ -243,6 +268,8 @@ All of the latencies metrics are Prometheus Histogram with default buckets of [0
 
 Percentiles are estimated by Prometheus base on above buckets to give us the results, but it not always accurate to all kind of network services. For example, our SLO say we should keep 95% of HTTP request less than 500ms, having a bucket of [1, 5, 10] will be overestimated, or a bucket of [0.075, 0.1, 0.25] will result almost all of the requests fall into +Inf bucket, no way to calculated P95.
 
+This is reason why DNS/TCP check are not white accurate with default buckets as they have quite low latency (<5ms).
+
 The goal is to capture enough detail to support analysis, the best practices on choosing buckets:
 
 - Understand the service: if your service require low latency (~10ms), typical latency (100-1000ms) or slow (>1s) and define SLOs. Base on that min-max latency range, implement an exponential buckets(Logarithmic Bucket Scaling) or clustered buckets around the SLO to better spot the outliers that affect SLAs.
@@ -250,7 +277,7 @@ The goal is to capture enough detail to support analysis, the best practices on 
 - Regularly review and adjust the bucket configuration.
 - Or use [Prometheus native histogram [EXPERIMENTAL]](https://prometheus.io/docs/specs/native_histograms/) to not worry about bucket configuration.
 
-### 6.3. On latency improvements in AWS
+### 6.3. On network latency improvements in AWS
 
 Disclaimer: I haven't tried all of these optimizations, just listing them as potential options.
 
@@ -286,7 +313,7 @@ See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-network-b
 
 Or use enhanced networking (Up to 100Gbps): [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking.html) => Bypasses virtualization when transmitting packets, ENI used by VM appears as a physical device.
 
-#### 6.3.4. Optimize Processing Time
+#### 6.3.4. Optimize Network Processing Time
 
 OS level optimization
 
@@ -296,7 +323,7 @@ OS level optimization
 
 => Bypasses OS kernel networking stack and reduces packet processing overhead.
 
-On Linux, configure busy poll mode, CPU power states (C-states), Interrupt moderation... See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ena-improve-network-latency-linux.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ena-improve-network-latency-linux.html)
+On Linux, we can configure busy poll mode, CPU power states (C-states), Interrupt moderation, TCP config... See: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ena-improve-network-latency-linux.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ena-improve-network-latency-linux.html), [https://ably.com/blog/optimizing-global-message-transit-latency-a-journey-through-tcp-configuration](https://ably.com/blog/optimizing-global-message-transit-latency-a-journey-through-tcp-configuration)
 
 ## 7. References
 
